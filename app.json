@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "testeReactNative",
-    "slug": "testeReactNative",
+    "name": "collarReactNative",
+    "slug": "collarReactNative",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",

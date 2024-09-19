@@ -94,6 +94,7 @@ const Publication: React.FC<PublicationProps> = ({ id, description, images, stat
           </View>
         </TouchableOpacity>
       </View>
+      
       <FlatList
         style={styles.images}
         data={images}

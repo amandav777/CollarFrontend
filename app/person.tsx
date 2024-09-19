@@ -1,55 +1,100 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, FlatList, Pressable, TouchableWithoutFeedback, Dimensions } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { View, Text, Image, StyleSheet, FlatList, Dimensions, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { formatDistanceToNow, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 
-interface Publication {
+type PublicationProps = {
   id: number;
+  description: string;
   images: string[];
-}
+  status: string;
+  createdAt: string;
+};
 
-export default function PersonScreen() {
-  const [userData, setUserData] = useState<any>(null);
-  const [publications, setPublications] = useState<Publication[]>([]);
-  const [tooltipVisible, setTooltipVisible] = useState(false);
+type UserProps = {
+  id: number;
+  name: string;
+  email: string;
+  profileImage: string;
+};
+
+const { width } = Dimensions.get('window');
+
+const ProfileScreen: React.FC = () => {
+  const [userData, setUserData] = useState<UserProps | null>(null);
+  const [publications, setPublications] = useState<PublicationProps[]>([]);
+  const [likedPublications, setLikedPublications] = useState<number[]>([]);
+  const [savedPublications, setSavedPublications] = useState<number[]>([]);
   const { userId } = useLocalSearchParams();
   const router = useRouter();
 
-  const toggleTooltip = () => {
-    setTooltipVisible(!tooltipVisible);
-  };
-
-  const closeTooltip = () => {
-    setTooltipVisible(false);
-  };
-
-  const renderPublicationImage = ({ item }: { item: string }) => (
-    <Image
-      source={{ uri: item }}
-      style={styles.publicationImage}
-    />
-  );
-
-  const fetchUserData = async () => {
-    try {
-      if (userId) {
-        const response = await fetch(`http://localhost:3000/users/${userId}`);
-        const result = await response.json();
-        setUserData(result);
-
-        // Fetch user publications
-        const publicationsResponse = await fetch(`http://localhost:3000/publications/user/${userId}`);
-        const publicationsResult = await publicationsResponse.json();
-        setPublications(publicationsResult);
-      }
-    } catch (error) {
-      console.error('Erro ao buscar dados do usuário ou publicações:', error);
-    }
-  };
-
   useEffect(() => {
+    // Fetch user data and publications based on userId
+    const fetchUserData = async () => {
+      try {
+        const userResponse = await fetch(`http://localhost:3000/users/${userId}`);
+        const userData = await userResponse.json();
+        setUserData(userData);
+
+        const publicationsResponse = await fetch(`http://localhost:3000/publications/user/${userId}`);
+        const publicationsData = await publicationsResponse.json();
+        setPublications(publicationsData);
+      } catch (error) {
+        console.error('Erro ao buscar dados:', error);
+      }
+    };
+
     fetchUserData();
   }, [userId]);
+
+  const handleLike = (id: number) => {
+    setLikedPublications((prevLiked) =>
+      prevLiked.includes(id) ? prevLiked.filter((item) => item !== id) : [...prevLiked, id]
+    );
+  };
+
+  const handleSave = (id: number) => {
+    setSavedPublications((prevSaved) =>
+      prevSaved.includes(id) ? prevSaved.filter((item) => item !== id) : [...prevSaved, id]
+    );
+  };
+
+  const renderPublication = ({ item }: { item: PublicationProps }) => {
+    const timeAgo = formatDistanceToNow(parseISO(item.createdAt), { addSuffix: false, locale: ptBR });
+    const isLiked = likedPublications.includes(item.id);
+    const isSaved = savedPublications.includes(item.id);
+
+    return (
+      <View style={styles.publicationContainer}>
+        <View style={styles.imageContainer}>
+          <FlatList
+            data={item.images}
+            renderItem={({ item }) => (
+              <Image source={{ uri: item }} style={styles.image} resizeMode="cover" />
+            )}
+            keyExtractor={(image, index) => `${item.id}-${index}`}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={true}
+          />
+          <Text style={styles.imageCount}>{item.images.length} imagens</Text>
+        </View>
+        <View style={styles.actionsContainer}>
+          <TouchableOpacity onPress={() => handleLike(item.id)} style={styles.iconButton}>
+            <Ionicons name={isLiked ? 'heart' : 'heart-outline'} size={30} color={isLiked ? 'red' : 'black'} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => handleSave(item.id)} style={styles.iconButton}>
+            <Ionicons name={isSaved ? 'bookmark' : 'bookmark-outline'} size={30} color="black" />
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.likes}>1.000 likes</Text>
+        <Text style={styles.description}>{item.description}</Text>
+        <Text style={styles.timeAgo}>{timeAgo} atrás</Text>
+      </View>
+    );
+  };
 
   if (!userData) {
     return <Text style={styles.loading}>Carregando...</Text>;
@@ -57,73 +102,71 @@ export default function PersonScreen() {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-        <Ionicons name="arrow-back" size={24} color="black" />
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.optionsButton}
-        onPress={toggleTooltip}
-      >
-        <Ionicons name="ellipsis-horizontal" size={24} color="black" />
-      </TouchableOpacity>
-
-      {tooltipVisible && (
-        <TouchableWithoutFeedback onPress={closeTooltip}>
-          <View style={styles.overlay} />
-        </TouchableWithoutFeedback>
-      )}
-
-      {tooltipVisible && (
-        <View style={styles.tooltipContainer}>
-          <View style={styles.tooltip}>
-            <Pressable style={styles.tooltipOption} onPress={() => console.log('Opção 1')}>
-              <Text style={styles.tooltipOptionText}>Denunciar Perfil</Text>
-            </Pressable>
-            <Pressable style={styles.tooltipOption} onPress={() => console.log('Opção 2')}>
-              <Text style={styles.tooltipOptionText}>Opção 2</Text>
-            </Pressable>
-            
-          </View>
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={24} color="black" />
+        </TouchableOpacity>
+        <Image
+          source={{ uri: userData.profileImage || 'https://via.placeholder.com/100' }}
+          style={styles.profileImage}
+        />
+        <Text style={styles.userName}>{userData.name}</Text>
+        <Text style={styles.userEmail}>(14) 98806-9926</Text>
+        <Text style={styles.userEmail}>{userData.email}</Text>
+      </View>
+      <View style={styles.containerPublication}>
+        <View style={styles.iconWrapper}>
+          <Ionicons name="images" size={25} color="#696969" />
         </View>
-      )}
+      </View>
 
-      <Image
-        source={{ uri: userData.profileImage || 'https://via.placeholder.com/100' }}
-        style={styles.profileImage}
-      />
-      <Text style={styles.title}>{userData.name || 'Usuário'}</Text>
-      <Text style={styles.detail}>{userData.email || 'Não disponível'}</Text>
       <FlatList
-        data={publications.flatMap(pub => pub.images)}
-        renderItem={renderPublicationImage}
-        keyExtractor={(item, index) => index.toString()}
-        numColumns={3}
-        contentContainerStyle={styles.publicationsGrid}
+        data={publications}
+        renderItem={renderPublication}
+        keyExtractor={(item) => item.id.toString()}
+        showsVerticalScrollIndicator={false}
       />
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
+  iconWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderBottomColor: "#696969",
+    borderBottomWidth: 2,
+    width: '30%',
+    paddingBottom: 15,
+    paddingHorizontal: 15,
+  },
   container: {
     flex: 1,
+    backgroundColor: '#fff',
+  },
+  header: {
     alignItems: 'center',
-    marginTop: 30,
-    padding: 20,
+    paddingVertical: 20,
+    marginTop: 20
+  },
+  backButton: {
+    position: 'absolute',
+    top: 5,
+    left: 10,
   },
   profileImage: {
     width: 100,
     height: 100,
-    borderRadius: 75,
-    marginBottom: 20,
+    borderRadius: 50,
+    marginBottom: 10,
   },
-  title: {
+  userName: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 5,
   },
-  detail: {
-    fontSize: 18,
+  userEmail: {
+    fontSize: 16,
+    marginTop: 5,
     color: 'gray',
   },
   loading: {
@@ -132,54 +175,62 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     fontSize: 18,
   },
-  backButton: {
-    position: 'absolute',
-    left: 10,
-    padding: 10,
-    zIndex: 1,
+  publicationContainer: {
+    marginBottom: 20,
   },
-  optionsButton: {
+  imageContainer: {
+    position: 'relative',
+  },
+  image: {
+    width: width,
+    height: 320,
+  },
+  imageCount: {
     position: 'absolute',
+    top: 10,
     right: 10,
-    padding: 10,
-    zIndex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    color: '#fff',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 5,
+    fontSize: 14,
+    fontWeight: 'bold',
   },
-  overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+  actionsContainer: {
+    flexDirection: 'row',
+    marginVertical: 5,
+    paddingHorizontal: 10,
   },
-  tooltipContainer: {
-    position: 'absolute',
-    top: 45, // Ajuste conforme necessário
-    right: 10, // Ajuste conforme necessário
-    zIndex: 2,
-    width: 180, // Ajuste a largura conforme necessário
+  iconButton: {
+    marginHorizontal: 10,
   },
-  tooltip: {
-    backgroundColor: 'white',
-    borderRadius: 10,
-    elevation: 5,
-    padding: 10,
-    width: 180,
+  likes: {
+    fontWeight: 'bold',
+    paddingHorizontal: 10,
   },
-  tooltipOption: {
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
+  description: {
+    paddingHorizontal: 10,
+    marginVertical: 5,
   },
-  tooltipOptionText: {
+  timeAgo: {
+    paddingHorizontal: 10,
+    color: '#696969',
+  },
+  publicationText: {
     fontSize: 16,
+    fontWeight: '600',
+    color: '#696969',
+    marginLeft: 10,
   },
-  publicationsGrid: {
-    marginTop: 50,
-  },
-  publicationImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 10,
-    margin: 2,
+  containerPublication: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderBottomColor: "#F3F3F3",
+    borderBottomWidth: 1,
+    padding: 15,
   },
 });
+
+export default ProfileScreen;
