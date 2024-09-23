@@ -13,6 +13,8 @@ type PublicationData = {
     name: string;
     profileImage:any
   };
+  location: string;
+  likeCount: any;
   createdAt: string;
 };
 
@@ -27,7 +29,7 @@ export default function HomeScreen() {
     const timeoutId = setTimeout(() => controller.abort(), 10000); 
 
     try {
-      const response = await fetch('http://localhost:3000/publications', { signal: controller.signal });
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/publications`, { signal: controller.signal });
       if (!response.ok) {
         throw new Error(`Erro: ${response.status}`);
       }
@@ -38,8 +40,8 @@ export default function HomeScreen() {
           ? new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           : new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       });
-
       setPublications(sortedResult);
+      console.log(publications)
       setLoading(false);
     } catch (error) {
       setLoading(false);
@@ -68,6 +70,8 @@ export default function HomeScreen() {
       status={item.status}
       user={item.user}
       createdAt={item.createdAt}
+      location={item.location}
+      likes={item.likeCount}
     />
   );
 

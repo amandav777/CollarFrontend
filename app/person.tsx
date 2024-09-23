@@ -22,7 +22,7 @@ type UserProps = {
 
 const { width } = Dimensions.get('window');
 
-const ProfileScreen: React.FC = () => {
+const PersonScreen: React.FC = () => {
   const [userData, setUserData] = useState<UserProps | null>(null);
   const [publications, setPublications] = useState<PublicationProps[]>([]);
   const [likedPublications, setLikedPublications] = useState<number[]>([]);
@@ -34,11 +34,11 @@ const ProfileScreen: React.FC = () => {
     // Fetch user data and publications based on userId
     const fetchUserData = async () => {
       try {
-        const userResponse = await fetch(`http://localhost:3000/users/${userId}`);
+        const userResponse = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/users/${userId}`);
         const userData = await userResponse.json();
         setUserData(userData);
 
-        const publicationsResponse = await fetch(`http://localhost:3000/publications/user/${userId}`);
+        const publicationsResponse = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/publications/user/${userId}`);
         const publicationsData = await publicationsResponse.json();
         setPublications(publicationsData);
       } catch (error) {
@@ -106,19 +106,28 @@ const ProfileScreen: React.FC = () => {
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="black" />
         </TouchableOpacity>
-        <Image
-          source={{ uri: userData.profileImage || 'https://via.placeholder.com/100' }}
-          style={styles.profileImage}
-        />
-        <Text style={styles.userName}>{userData.name}</Text>
-        <Text style={styles.userEmail}>(14) 98806-9926</Text>
-        <Text style={styles.userEmail}>{userData.email}</Text>
+        <TouchableOpacity style={styles.optionsButton} onPress={() => router.back()}>
+          <Ionicons name="ellipsis-horizontal" size={24} color="black" />
+        </TouchableOpacity>
+        <View style={styles.containerProfile}>
+
+          <Image
+            source={{ uri: userData.profileImage || 'https://via.placeholder.com/100' }}
+            style={styles.profileImage}
+          />
+          <View style={styles.profileTextContainer}>
+
+            <Text style={styles.userName}>{userData.name}</Text>
+            <Text style={styles.userEmail}>(14) 98806-9926</Text>
+            <Text style={styles.userEmail}>{userData.email}</Text>
+          </View>
+        </View>
       </View>
-      <View style={styles.containerPublication}>
+      {/* <View style={styles.containerPublication}>
         <View style={styles.iconWrapper}>
           <Ionicons name="images" size={25} color="#696969" />
         </View>
-      </View>
+      </View> */}
 
       <FlatList
         data={publications}
@@ -131,6 +140,7 @@ const ProfileScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  containerProfile: { flexDirection: "row", marginTop: 50, justifyContent: "flex-start", marginLeft: 20 }, profileTextContainer: { marginLeft: 20 }, editIcon: { marginLeft: 70 },
   iconWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -145,27 +155,34 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   header: {
-    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderColor: "#f3f3f3",
+    alignItems: 'flex-start',
     paddingVertical: 20,
-    marginTop: 20
+    marginTop: 20,
   },
   backButton: {
     position: 'absolute',
-    top: 5,
-    left: 10,
+    top: 15,
+    left: 25,
+  },
+  optionsButton: {
+    position: 'absolute',
+    top: 15,
+    right: 25,
   },
   profileImage: {
-    width: 100,
-    height: 100,
+    width: 70,
+    height: 70,
     borderRadius: 50,
     marginBottom: 10,
   },
   userName: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
   },
   userEmail: {
-    fontSize: 16,
+    fontSize: 13,
     marginTop: 5,
     color: 'gray',
   },
@@ -233,4 +250,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ProfileScreen;
+export default PersonScreen;

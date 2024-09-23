@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Image, StyleSheet, FlatList, Dimensions, TouchableOpacity } from 'react-native';
+import { View, Text, Image, StyleSheet, FlatList, Dimensions, TouchableOpacity, TouchableWithoutFeedback, Animated, Easing } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useRouter } from 'expo-router';
-import * as Location from 'expo-location';
 import axios from 'axios';
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type PublicationProps = {
   id: number;
@@ -18,61 +17,123 @@ type PublicationProps = {
     profileImage: any;
     id: number;
   };
+  likes: any;
+  location: string;
   createdAt: string;
 };
 
 const { width } = Dimensions.get('window');
 
-const Publication: React.FC<PublicationProps> = ({ id, description, images, status, user, createdAt }) => {
+const Publication: React.FC<PublicationProps> = ({ id, description, images, status, user, createdAt, location, likes }) => {
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [city, setCity] = useState<string | null>(null); // Cidade será armazenada aqui
+  const [showHeart, setShowHeart] = useState(false);
+  const [likeCount, setLikeCount] = useState<number>(likes || 0);
+  const [lastPress, setLastPress] = useState<number | null>(null);
+  const [animation] = useState(new Animated.Value(0));
   const router = useRouter();
   const userId = user.id;
 
   useEffect(() => {
-    const fetchCityFromNominatim = async (latitude: number, longitude: number) => {
+    const checkLikeStatus = async () => {
+      const storedUserId = await AsyncStorage.getItem('userId');
+
       try {
-        const response = await axios.get(
-          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
-        );
-        if (response.data && response.data.address) {
-          return response.data.address.city || response.data.address.town || response.data.address.village;
+        const response = await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/publications/${id}/likes?userId=${storedUserId}`);
+
+        if (response.status === 200 && response.data.liked) {
+          setLiked(true);
+        } else {
+          setLiked(false);
         }
-        return null;
       } catch (error) {
-        console.error('Erro ao buscar a cidade:', error);
-        return null;
+        console.error('Erro ao carregar o status do like:', error);
       }
     };
 
-    const getLocation = async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        console.log('Permissão para acessar a localização foi negada');
-        return;
+    checkLikeStatus();
+  }, [id]); // Executa novamente quando o `id` da publicação mudar
+
+
+
+  // Função para lidar com o like
+  const handleLike = async () => {
+    const storedUserId = await AsyncStorage.getItem('userId');
+    const newLikeStatus = !liked;
+    const newLikeCount = newLikeStatus ? likeCount + 1 : likeCount - 1;
+
+    try {
+      const response = await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/publications/like`, {
+        publicationId: id,
+        userId: Number(storedUserId),
+      });
+
+      if (response.status === 200 || response.status===201) {
+        setLiked(newLikeStatus);
+        setLikeCount(newLikeCount);
+        
+        // Animar o coração ao dar like
+        setShowHeart(true);
+        Animated.sequence([
+          Animated.timing(animation, {
+            toValue: 1,
+            duration: 300,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(animation, {
+            toValue: 0,
+            duration: 300,
+            easing: Easing.in(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]).start(() => setShowHeart(false));
+      } else {
+        console.error('Erro ao atualizar o like no servidor:', response.status);
       }
-
-      let location = await Location.getCurrentPositionAsync({});
-      const fetchedCity = await fetchCityFromNominatim(location.coords.latitude, location.coords.longitude);
-      setCity(fetchedCity);
-    };
-
-    getLocation();
-  }, []);
-
-  const handleLike = () => {
-    setLiked(!liked);
+    } catch (error) {
+      console.error('Erro ao atualizar o like:', error);
+    }
   };
 
-  const handleSave = () => {
-    setSaved(!saved);
+  // Verifica se o usuário deu like ao dar duplo toque
+  const handleDoubleTap = () => {
+    const now = Date.now();
+    if (lastPress && (now - lastPress) < 300) {
+      handleLike();
+    }
+    setLastPress(now);
   };
 
+  // Função para salvar a publicação
+  const handleSave = async () => {
+    const storedUserId = await AsyncStorage.getItem('userId');
+    setSaved(!saved); // Alterna o estado de salvo
+  };
+
+  // Renderiza a imagem
   const renderImage = ({ item }: { item: string }) => (
-    <Image source={{ uri: item }} style={styles.image} resizeMode="cover" />
+    <TouchableWithoutFeedback onPress={handleDoubleTap}>
+      <View style={styles.imageContainer}>
+        <Image source={{ uri: item }} style={styles.image} resizeMode="cover" />
+        {showHeart && (
+          <Animated.View style={[
+            styles.heartContainer,
+            {
+              opacity: animation,
+              transform: [
+                { scale: animation.interpolate({ inputRange: [0, 1], outputRange: [1, 1.5] }) },
+              ],
+            }
+          ]}>
+            <Ionicons name="heart" size={60} color="white" />
+          </Animated.View>
+        )}
+      </View>
+    </TouchableWithoutFeedback>
   );
 
+  // Formata o tempo de criação
   const timeAgo = formatDistanceToNow(parseISO(createdAt), { addSuffix: false, locale: ptBR });
 
   return (
@@ -90,11 +151,11 @@ const Publication: React.FC<PublicationProps> = ({ id, description, images, stat
           />
           <View>
             <Text style={styles.headTittle}>{user.name}</Text>
-            <Text style={styles.cityText}>{city ? city : 'Aguardando localização...'}</Text> 
+            <Text style={styles.cityText}>{location}</Text>
           </View>
         </TouchableOpacity>
       </View>
-      
+
       <FlatList
         style={styles.images}
         data={images}
@@ -116,7 +177,7 @@ const Publication: React.FC<PublicationProps> = ({ id, description, images, stat
           <Ionicons name={saved ? 'bookmark' : 'bookmark-outline'} size={30} color="black" />
         </TouchableOpacity>
       </View>
-      <Text style={styles.title}>1.000 likes</Text>
+      <Text style={styles.title}>{likeCount} curtidas</Text>
       <Text style={styles.title}>{status}</Text>
       <Text style={styles.text}>{description}</Text>
       <Text style={styles.hours}>{timeAgo} atrás</Text>
@@ -135,9 +196,20 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     paddingHorizontal: 15,
   },
+  imageContainer: {
+    position: 'relative',
+  },
   image: {
     width: width,
     height: 320,
+  },
+  heartContainer: {
+    position: 'absolute',
+    top: '30%',
+    left: '40%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
   },
   actionsContainer: {
     flexDirection: 'row',
@@ -189,7 +261,6 @@ const styles = StyleSheet.create({
   },
   cityText: {
     color: "#696969"
-    
   }
 });
 
