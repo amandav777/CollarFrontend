@@ -17,6 +17,11 @@ const LoginScreen: React.FC = () => {
   }, [isAuthenticated, router]);
 
   const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('Validation error', 'Email and password are required.');
+      return;
+    }
+
     try {
       const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/auth/login`, {
         method: 'POST',
@@ -33,17 +38,17 @@ const LoginScreen: React.FC = () => {
       // Armazenar tanto o token quanto o userId
       await AsyncStorage.setItem('token', access_token);
       await AsyncStorage.setItem('userId', userId.toString());
-      router.push('/')
- // Navegue para a tela inicial ou outra tela protegida
+      router.push('/'); // Navegue para a tela inicial ou outra tela protegida
     } catch (error) {
-      Alert.alert('Login failed');
+      Alert.alert('Login failed', 'Invalid email or password. Please try again.');
     }
   };
+
 
   return (
     <View style={styles.container}>
       <Image
-        source={{ uri: '../assets/images/logo.png' }}
+        source={{ uri: '../assets/images/icon.png' }}
         style={styles.image}
       />
       <Text style={styles.title}>Login</Text>

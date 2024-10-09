@@ -4,10 +4,10 @@ import { ThemedView } from '@/components/ThemedView';
 
 export default function Header() {
   const colorScheme = useColorScheme();
-  const isDarkMode = colorScheme === 'dark';
+  // const isDarkMode = colorScheme === 'dark';
 
   return (
-    <ThemedView style={[styles.titleContainer, isDarkMode ? styles.dark : styles.light]}>
+    <ThemedView style={[styles.titleContainer, styles.light]}>
       <Image
         source={require('@/assets/images/LogoEscrita.png')}
         style={styles.reactLogo}

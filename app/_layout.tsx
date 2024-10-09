@@ -5,14 +5,12 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
 
-import { useColorScheme } from '@/hooks/useColorScheme';
 import { AuthProvider } from '@/app/AuthContext'; // Importe o AuthProvider
 import { useAuth } from '@/hooks/useAuth';
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
@@ -22,10 +20,8 @@ export default function RootLayout() {
    
     if (loaded && !loading) {
       if (!isAuthenticated) {
-        console.log('Redirecting to login');
         router.replace('/login');
       } else {
-        console.log('Hiding splash screen');
         SplashScreen.hideAsync();
       }
     }
@@ -38,11 +34,11 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <ThemeProvider value={ DefaultTheme}>
         <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false, gestureEnabled: false }} />
           <Stack.Screen name="person" options={{ headerShown: false }} />
-          <Stack.Screen name="login" options={{ headerShown: false }} />
+          <Stack.Screen name="login" options={{ headerShown: false, gestureEnabled: false }} /> 
           <Stack.Screen name="register" options={{ headerShown: false }} />
           <Stack.Screen name="+not-found" />
         </Stack>

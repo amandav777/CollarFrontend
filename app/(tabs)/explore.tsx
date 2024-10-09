@@ -1,62 +1,82 @@
-import { StyleSheet, View, FlatList, Text, Image } from 'react-native';
-import { useState } from 'react';
-import SearchBar from '@/components/SearchBar';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, FlatList, Text, Image, ActivityIndicator } from 'react-native';
+import SearchBar from '@/components/SearchBar'; // Supondo que você já tenha este componente de barra de pesquisa
+import axios from 'axios';
 
-// Definindo a estrutura de cada Post
 interface Post {
-  id: string;
-  title: string;
-  image: string;
-  user: string;
-  status: string;  // Novo campo de status
+  id: number;
+  description: string;
+  images: string[];
+  user: {
+    username: string;
+  };
+  likeCount: number;
+  status: string;
 }
 
 export default function TabTwoScreen() {
-  const allPosts: Post[] = [
-    { id: '1', title: 'Caminhada no Parque', image: 'https://via.placeholder.com/150', user: 'User1', status: 'Publicado' },
-    { id: '2', title: 'Almoço Saudável', image: 'https://via.placeholder.com/150', user: 'User2', status: 'Rascunho' },
-    { id: '3', title: 'Viagem para a Praia', image: 'https://via.placeholder.com/150', user: 'User3', status: 'Publicado' },
-    // Adicione mais publicações aqui
-  ];
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [filteredPosts, setFilteredPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
 
-  const [filteredPosts, setFilteredPosts] = useState<Post[]>(allPosts);
+  // Função para buscar publicações do backend
+  const fetchPublications = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/publications`);
+      setPosts(response.data);
+      setFilteredPosts(response.data);
+    } catch (error) {
+      console.error('Erro ao buscar publicações:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const handleSearch = (query: string) => {
+  useEffect(() => {
+    fetchPublications();
+  }, []);
+
+  const handleSearch = async (query: string) => {
     if (query === '') {
-      setFilteredPosts(allPosts);
+      setFilteredPosts(posts);
     } else {
-      const filtered = allPosts.filter(post => {
-        const lowerQuery = query.toLowerCase();
-        return (
-          post.title.toLowerCase().includes(lowerQuery) ||   
-          post.user.toLowerCase().includes(lowerQuery) ||    
-          post.status.toLowerCase().includes(lowerQuery)     
-        );
-      });
-      setFilteredPosts(filtered);
+      setLoading(true);
+      try {
+        const response = await axios.get(`http://localhost:3000/publications/search?q=${query}`);
+        setFilteredPosts(response.data);
+      } catch (error) {
+        console.error('Erro na busca:', error);
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
   const renderPost = ({ item }: { item: Post }) => (
     <View style={styles.postContainer}>
-      <Image source={{ uri: item.image }} style={styles.postImage} />
+      <Image source={{ uri: item.images[0] }} style={styles.postImage} />
       <View style={styles.postDetails}>
-        <Text style={styles.postTitle}>{item.title}</Text>
-        <Text style={styles.postUser}>{item.user}</Text>
-        {/* <Text style={styles.postStatus}>{item.status}</Text> Exibir o status */}
+        <Text style={styles.postTitle}>{item.description}</Text>
+        <Text style={styles.postUser}>{item.user.username}</Text>
+        <Text style={styles.postLikeCount}>{item.likeCount} curtidas</Text>
       </View>
     </View>
   );
 
   return (
     <View style={styles.container}>
-      <SearchBar data={allPosts} onSearch={handleSearch} />
-      <FlatList
-        data={filteredPosts}
-        keyExtractor={item => item.id}
-        renderItem={renderPost}
-        contentContainerStyle={styles.list}
-      />
+      <SearchBar onSearch={handleSearch} data={[]} />
+      {loading ? (
+        <ActivityIndicator size="large" color="#0000ff" />
+      ) : (
+        <FlatList
+          data={filteredPosts}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderPost}
+          contentContainerStyle={styles.list}
+        />
+      )}
     </View>
   );
 }
@@ -93,7 +113,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
   },
-  postStatus: {
+  postLikeCount: {
     fontSize: 12,
     color: '#999',
   },

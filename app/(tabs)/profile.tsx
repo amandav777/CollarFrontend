@@ -5,7 +5,9 @@ import { formatDistanceToNow, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import LogoutButton from '@/components/LogoutButton';
-// import SkeletonLoader from '@/components/SkeletonLoader';
+import SkeletonLoader from '@/components/SkeletonLoader';
+import LinearGradient from 'react-native-linear-gradient';
+
 
 
 type PublicationProps = {
@@ -40,7 +42,6 @@ const ProfileScreen: React.FC = () => {
         const storedUserId = await AsyncStorage.getItem('userId');
         if (storedUserId) {
           setUserId(parseInt(storedUserId, 10));
-          console.log(userId)
         }
       } catch (error) {
         console.error('Error getting userId from AsyncStorage:', error);
@@ -133,9 +134,9 @@ const ProfileScreen: React.FC = () => {
     );
   };
 
-  if (!userData) {
-    return "<SkeletonLoader />";
-  }
+  // if (!userData) {
+    // return <SkeletonLoader />;
+  // }
 
   const publicationsToDisplay = activeTab === 'liked' ? publications.filter(pub => likedPublications.includes(pub.id)) : publications.filter(pub => savedPublications.includes(pub.id));
 
@@ -144,13 +145,13 @@ const ProfileScreen: React.FC = () => {
       <View style={styles.header}>
         <View style={styles.containerProfile}>
           <Image
-            source={{ uri: userData.profileImage || 'https://via.placeholder.com/100' }}
+            source={{ uri: userData?.profileImage || 'https://via.placeholder.com/100' }}
             style={styles.profileImage}
           />
           <View style={styles.profileTextContainer}>
-            <Text style={styles.userName}>{userData.name || 'Usuario'}</Text>
+            <Text style={styles.userName}>{userData?.name || 'Usuario'}</Text>
             <Text style={styles.userEmail}>(14) 98806-9926</Text>
-            <Text style={styles.userEmail}>{userData.email || 'email@example.com'} </Text>
+            <Text style={styles.userEmail}>{userData?.email || 'email@example.com'} </Text>
           </View>
           <Ionicons style={styles.editIcon} name="brush" size={18} color="gray" />
         </View>

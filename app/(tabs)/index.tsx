@@ -41,7 +41,6 @@ export default function HomeScreen() {
           : new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       });
       setPublications(sortedResult);
-      console.log(publications)
       setLoading(false);
     } catch (error) {
       setLoading(false);
