@@ -31,7 +31,6 @@ const PersonScreen: React.FC = () => {
   const router = useRouter();
 
   useEffect(() => {
-    // Fetch user data and publications based on userId
     const fetchUserData = async () => {
       try {
         const userResponse = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/users/${userId}`);

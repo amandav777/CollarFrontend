@@ -1,3 +1,5 @@
+// src/screens/ProfileScreen.tsx
+
 import React, { useEffect, useState } from 'react';
 import { View, Text, Image, StyleSheet, FlatList, Dimensions, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,9 +8,7 @@ import { ptBR } from 'date-fns/locale';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import LogoutButton from '@/components/LogoutButton';
 import SkeletonLoader from '@/components/SkeletonLoader';
-import LinearGradient from 'react-native-linear-gradient';
-
-
+import { fetchUserData } from '@/services/userService'; // Importando o serviço
 
 type PublicationProps = {
   id: number;
@@ -36,8 +36,7 @@ const ProfileScreen: React.FC = () => {
   const [userId, setUserId] = useState<number | null>(null);
 
   useEffect(() => {
-    // Função para obter o userId do AsyncStorage e buscar os dados do usuário
-    const fetchUserData = async () => {
+    const fetchUserId = async () => {
       try {
         const storedUserId = await AsyncStorage.getItem('userId');
         if (storedUserId) {
@@ -48,25 +47,23 @@ const ProfileScreen: React.FC = () => {
       }
     };
 
-    fetchUserData();
+    fetchUserId();
   }, []);
 
   useEffect(() => {
     if (userId === null) return;
 
-    const fetchUserData = async () => {
+    const fetchData = async () => {
       try {
-        const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/users/${userId}`);
-        const data: UserProps = await response.json();
+        const data: UserProps = await fetchUserData(userId);
         setUserData(data);
       } catch (error) {
         console.error('Error fetching user data:', error);
       }
     };
 
-    fetchUserData();
+    fetchData();
 
-    // Dados fictícios para publicações
     const fakePublications: PublicationProps[] = [
       {
         id: 1,
@@ -133,10 +130,6 @@ const ProfileScreen: React.FC = () => {
       </View>
     );
   };
-
-  // if (!userData) {
-    // return <SkeletonLoader />;
-  // }
 
   const publicationsToDisplay = activeTab === 'liked' ? publications.filter(pub => likedPublications.includes(pub.id)) : publications.filter(pub => savedPublications.includes(pub.id));
 

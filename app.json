@@ -17,15 +17,17 @@
       "splash": {
         "image": "./assets/images/splash.png",
         "resizeMode": "contain",
-        "backgroundColor": "#ffffff" 
-      }
+        "backgroundColor": "#ffffff"
+      },
+      "bundleIdentifier": "com.anonymous.Collar"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/logo.png",
         "backgroundColor": "#ffffff",
         "usesCleartextTraffic": true
-      }
+      },
+      "package": "com.anonymous.Collar"
     },
     "web": {
       "bundler": "metro",

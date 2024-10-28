@@ -1,31 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, FlatList, Text, Image, ActivityIndicator } from 'react-native';
-import SearchBar from '@/components/SearchBar'; // Supondo que você já tenha este componente de barra de pesquisa
-import axios from 'axios';
+import SearchBar from '@/components/SearchBar'; 
+import { fetchPublications, searchPublications, PublicationData } from '@/services/publicationService';
 
-interface Post {
-  id: number;
-  description: string;
-  images: string[];
-  user: {
-    username: string;
-  };
-  likeCount: number;
-  status: string;
-}
-
-export default function TabTwoScreen() {
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [filteredPosts, setFilteredPosts] = useState<Post[]>([]);
+export default function ExploreScreen() {
+  const [posts, setPosts] = useState<PublicationData[]>([]);
+  const [filteredPosts, setFilteredPosts] = useState<PublicationData[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
 
   // Função para buscar publicações do backend
-  const fetchPublications = async () => {
+  const loadPublications = async () => {
     setLoading(true);
+    const controller = new AbortController(); // Criando o AbortController
     try {
-      const response = await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/publications`);
-      setPosts(response.data);
-      setFilteredPosts(response.data);
+      const data = await fetchPublications(controller);
+      setPosts(data);
+      setFilteredPosts(data);
     } catch (error) {
       console.error('Erro ao buscar publicações:', error);
     } finally {
@@ -34,7 +24,7 @@ export default function TabTwoScreen() {
   };
 
   useEffect(() => {
-    fetchPublications();
+    loadPublications();
   }, []);
 
   const handleSearch = async (query: string) => {
@@ -43,8 +33,8 @@ export default function TabTwoScreen() {
     } else {
       setLoading(true);
       try {
-        const response = await axios.get(`http://localhost:3000/publications/search?q=${query}`);
-        setFilteredPosts(response.data);
+        const data = await searchPublications(query);
+        setFilteredPosts(data);
       } catch (error) {
         console.error('Erro na busca:', error);
       } finally {
@@ -53,12 +43,12 @@ export default function TabTwoScreen() {
     }
   };
 
-  const renderPost = ({ item }: { item: Post }) => (
+  const renderPost = ({ item }: { item: PublicationData }) => (
     <View style={styles.postContainer}>
       <Image source={{ uri: item.images[0] }} style={styles.postImage} />
       <View style={styles.postDetails}>
         <Text style={styles.postTitle}>{item.description}</Text>
-        <Text style={styles.postUser}>{item.user.username}</Text>
+        <Text style={styles.postUser}>{item.user.name}</Text> {/* Corrigido para user.name */}
         <Text style={styles.postLikeCount}>{item.likeCount} curtidas</Text>
       </View>
     </View>

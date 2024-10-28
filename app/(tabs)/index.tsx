@@ -1,64 +1,44 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, FlatList, ActivityIndicator, RefreshControl, View } from 'react-native';
+import { StyleSheet, FlatList, ActivityIndicator, RefreshControl, View, Text } from 'react-native';
 import Header from '@/components/Header';
 import Publication from '@/components/Publication';
+import { fetchPublications, PublicationData } from '@/services/publicationService';
 
-type PublicationData = {
-  id: number;
-  description: string;
-  images: string[];
-  status: string;
-  user: {
-    id:number,
-    name: string;
-    profileImage:any
-  };
-  location: string;
-  likeCount: any;
-  createdAt: string;
-};
-
-export default function HomeScreen() {
+const HomeScreen = () => {
   const [publications, setPublications] = useState<PublicationData[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [sortOrder] = useState<'asc' | 'desc'>('desc');
 
-  const fetchData = async () => {
+  const loadPublications = async () => {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); 
-
     try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/publications`, { signal: controller.signal });
-      if (!response.ok) {
-        throw new Error(`Erro: ${response.status}`);
-      }
-      const result = await response.json();
-
-      const sortedResult = result.sort((a: PublicationData, b: PublicationData) => {
-        return sortOrder === 'desc'
-          ? new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          : new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-      });
+      const result = await fetchPublications(controller);
+      const sortedResult = sortPublications(result);
       setPublications(sortedResult);
-      setLoading(false);
     } catch (error) {
-      setLoading(false);
+      // Trate o erro se necessário
     } finally {
-      clearTimeout(timeoutId);
+      setLoading(false);
     }
+  };
+
+  const sortPublications = (publications: PublicationData[]) => {
+    return publications.sort((a, b) => {
+      return sortOrder === 'desc'
+        ? new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        : new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    });
   };
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    setTimeout(() => {
-      fetchData();
-      setRefreshing(false);
-    }, 2000);
-  }, [sortOrder]);
+    loadPublications();
+    setRefreshing(false);
+  }, []);
 
   useEffect(() => {
-    fetchData();
+    loadPublications();
   }, [sortOrder]);
 
   const renderPublication = ({ item }: { item: PublicationData }) => (
@@ -76,30 +56,34 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <Header/>
+      <Header />
       {loading ? (
         <ActivityIndicator size="large" color="#0000ff" />
+      ) : publications.length === 0 ? (
+        <Text style={styles.emptyMessage}>Nenhuma publicação disponível.</Text>
       ) : (
         <FlatList
           data={publications}
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderPublication}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-            />
-          }
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         />
       )}
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1, 
-    // padding: 10,
+    flex: 1,
     backgroundColor: '#fff',
   },
+  emptyMessage: {
+    textAlign: 'center',
+    marginTop: 50,
+    fontSize: 16,
+    color: '#888',
+  },
 });
+
+export default HomeScreen;

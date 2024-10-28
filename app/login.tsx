@@ -1,54 +1,52 @@
-import React, { useEffect, useState } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Image } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useAuth } from '@/hooks/useAuth';
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  Image,
+} from "react-native";
+import { useRouter } from "expo-router";
+import { useAuth } from "@/hooks/useAuth";
+import { login } from "@/services/authService";
 
 const LoginScreen: React.FC = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const { isAuthenticated } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     if (isAuthenticated) {
-      // Redireciona para a tela principal se o usuário já estiver autenticado
+      router.push("/");
     }
   }, [isAuthenticated, router]);
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Validation error', 'Email and password are required.');
+      Alert.alert("Validation error", "Email and password are required.");
       return;
     }
 
     try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Invalid email or password');
-      }
-
-      const { access_token, userId } = await response.json();
-
-      // Armazenar tanto o token quanto o userId
-      await AsyncStorage.setItem('token', access_token);
-      await AsyncStorage.setItem('userId', userId.toString());
-      router.push('/'); // Navegue para a tela inicial ou outra tela protegida
-    } catch (error) {
-      Alert.alert('Login failed', 'Invalid email or password. Please try again.');
+      await login(email, password);
+      router.push("/");
+    } catch (error:any) {
+      Alert.alert(
+        "Login failed",
+        error.message === "Request timed out"
+          ? "The request took too long, please try again."
+          : "Invalid email or password. Please try again."
+      );
     }
   };
-
 
   return (
     <View style={styles.container}>
       <Image
-        source={{ uri: '../assets/images/icon.png' }}
+        source={require("../assets/images/logo.png")}
         style={styles.image}
       />
       <Text style={styles.title}>Login</Text>
@@ -56,6 +54,7 @@ const LoginScreen: React.FC = () => {
         style={styles.input}
         placeholder="Email"
         value={email}
+        placeholderTextColor="#888"
         onChangeText={setEmail}
         keyboardType="email-address"
       />
@@ -63,13 +62,14 @@ const LoginScreen: React.FC = () => {
         style={styles.input}
         placeholder="Password"
         value={password}
+        placeholderTextColor="#888"
         onChangeText={setPassword}
         secureTextEntry
       />
       <TouchableOpacity style={styles.button} onPress={handleLogin}>
         <Text style={styles.buttonText}>Login</Text>
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => router.push('/register')}>
+      <TouchableOpacity onPress={() => router.push("/register")}>
         <Text style={styles.link}>Don't have an account? Register</Text>
       </TouchableOpacity>
     </View>
@@ -79,46 +79,46 @@ const LoginScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     padding: 16,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 24,
-    textAlign: 'center',
+    textAlign: "center",
   },
   image: {
     width: 100,
     height: 100,
-    resizeMode: 'contain', // ou 'cover', dependendo do efeito desejado
+    resizeMode: "contain",
     marginBottom: 20,
-    alignSelf: 'center', // Centraliza a imagem horizontalmente
+    alignSelf: "center",
   },
   input: {
     height: 40,
-    borderColor: '#ccc',
+    borderColor: "#ccc",
     borderWidth: 1,
     borderRadius: 5,
     marginBottom: 16,
     paddingHorizontal: 8,
   },
   button: {
-    backgroundColor: '#007BFF',
+    backgroundColor: "#007BFF",
     padding: 12,
     borderRadius: 5,
-    alignItems: 'center',
+    alignItems: "center",
   },
   buttonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   link: {
     marginTop: 16,
-    textAlign: 'center',
-    color: '#007BFF',
+    textAlign: "center",
+    color: "#007BFF",
   },
 });
 
