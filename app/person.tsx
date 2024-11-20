@@ -100,7 +100,7 @@ const PersonScreen: React.FC = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={styles.containerPerson}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="black" />
@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
     paddingBottom: 15,
     paddingHorizontal: 15,
   },
-  container: {
+  containerPerson: {
     flex: 1,
     backgroundColor: '#fff',
   },

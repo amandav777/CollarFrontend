@@ -4,7 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 const fetchWithTimeout = (
   url: string | URL | Request,
   options: RequestInit | undefined,
-  timeout = 5000
+  timeout = 10000
 ) => {
   return Promise.race([
     fetch(url, options),
@@ -14,13 +14,12 @@ const fetchWithTimeout = (
   ]);
 };
 
-export const register = async ({ name, email, password }: { name: string; email: string; password: string; }) => {
-  const response:any = await fetchWithTimeout(
+export const register = async (formData: FormData) => {
+  const response: any = await fetchWithTimeout(
     `${process.env.EXPO_PUBLIC_API_URL}/auth/register`,
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
+      body: formData,
     }
   );
 
@@ -28,7 +27,7 @@ export const register = async ({ name, email, password }: { name: string; email:
     throw new Error("Registration failed");
   }
 
-  return await response.json(); 
+  return await response.json();
 };
 
 export const login = async (email: string, password: string) => {

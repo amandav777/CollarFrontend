@@ -1,11 +1,22 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, Image, StyleSheet, FlatList, Dimensions, TouchableOpacity, TouchableWithoutFeedback, Animated, Easing } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { formatDistanceToNow, parseISO } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { useRouter } from 'expo-router';
-import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  FlatList,
+  Dimensions,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  Animated,
+  Easing,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { formatDistanceToNow, parseISO } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { useRouter } from "expo-router";
+import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type PublicationProps = {
   id: number;
@@ -16,30 +27,45 @@ type PublicationProps = {
     name: string;
     profileImage: any;
     id: number;
+    profilePicture: string;
   };
   likes: any;
   location: string;
   createdAt: string;
 };
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
-const Publication: React.FC<PublicationProps> = ({ id, description, images, status, user, createdAt, location, likes }) => {
+const Publication: React.FC<PublicationProps> = ({
+  id,
+  description,
+  images,
+  status,
+  user,
+  createdAt,
+  location,
+  likes,
+}) => {
   const [liked, setLiked] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [showHeart, setShowHeart] = useState(false);
   const [likeCount, setLikeCount] = useState<number>(likes || 0);
   const [lastPress, setLastPress] = useState<number | null>(null);
   const [animation] = useState(new Animated.Value(0));
   const router = useRouter();
   const userId = user.id;
+  const timeAgo = formatDistanceToNow(parseISO(createdAt), {
+    addSuffix: true,
+    locale: ptBR,
+  });
 
   useEffect(() => {
     const checkLikeStatus = async () => {
-      const storedUserId = await AsyncStorage.getItem('userId');
+      const storedUserId = await AsyncStorage.getItem("userId");
 
       try {
-        const response = await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/publications/${id}/likes?userId=${storedUserId}`);
+        const response = await axios.get(
+          `${process.env.EXPO_PUBLIC_API_URL}/publications/${id}/likes?userId=${storedUserId}`
+        );
 
         if (response.status === 200 && response.data.liked) {
           setLiked(true);
@@ -47,32 +73,31 @@ const Publication: React.FC<PublicationProps> = ({ id, description, images, stat
           setLiked(false);
         }
       } catch (error) {
-        console.error('Erro ao carregar o status do like:', error);
+        console.error("Erro ao carregar o status do like:", error);
       }
     };
 
     checkLikeStatus();
-  }, [id]); // Executa novamente quando o `id` da publicação mudar
+  }, [id]);
 
-
-
-  // Função para lidar com o like
   const handleLike = async () => {
-    const storedUserId = await AsyncStorage.getItem('userId');
+    const storedUserId = await AsyncStorage.getItem("userId");
     const newLikeStatus = !liked;
     const newLikeCount = newLikeStatus ? likeCount + 1 : likeCount - 1;
 
     try {
-      const response = await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/publications/like`, {
-        publicationId: id,
-        userId: Number(storedUserId),
-      });
+      const response = await axios.post(
+        `${process.env.EXPO_PUBLIC_API_URL}/publications/like`,
+        {
+          publicationId: id,
+          userId: Number(storedUserId),
+        }
+      );
 
-      if (response.status === 200 || response.status===201) {
+      if (response.status === 200 || response.status === 201) {
         setLiked(newLikeStatus);
         setLikeCount(newLikeCount);
-        
-        // Animar o coração ao dar like
+
         setShowHeart(true);
         Animated.sequence([
           Animated.timing(animation, {
@@ -89,43 +114,46 @@ const Publication: React.FC<PublicationProps> = ({ id, description, images, stat
           }),
         ]).start(() => setShowHeart(false));
       } else {
-        console.error('Erro ao atualizar o like no servidor:', response.status);
+        console.error("Erro ao atualizar o like no servidor:", response.status);
       }
     } catch (error) {
-      console.error('Erro ao atualizar o like:', error);
+      console.error("Erro ao atualizar o like:", error);
     }
   };
 
-  // Verifica se o usuário deu like ao dar duplo toque
   const handleDoubleTap = () => {
     const now = Date.now();
-    if (lastPress && (now - lastPress) < 300) {
+    if (lastPress && now - lastPress < 300) {
       handleLike();
     }
     setLastPress(now);
   };
 
-  // Função para salvar a publicação
-  const handleSave = async () => {
-    const storedUserId = await AsyncStorage.getItem('userId');
-    setSaved(!saved); // Alterna o estado de salvo
-  };
-
-  // Renderiza a imagem
   const renderImage = ({ item }: { item: string }) => (
     <TouchableWithoutFeedback onPress={handleDoubleTap}>
       <View style={styles.imageContainer}>
-        <Image source={{ uri: item }} style={styles.image} resizeMode="cover" />
+        <Image
+          source={{ uri: item }}
+          style={styles.image}
+          resizeMode="center"
+        />
         {showHeart && (
-          <Animated.View style={[
-            styles.heartContainer,
-            {
-              opacity: animation,
-              transform: [
-                { scale: animation.interpolate({ inputRange: [0, 1], outputRange: [1, 1.5] }) },
-              ],
-            }
-          ]}>
+          <Animated.View
+            style={[
+              styles.heartContainer,
+              {
+                opacity: animation,
+                transform: [
+                  {
+                    scale: animation.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [1, 1.5],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
             <Ionicons name="heart" size={60} color="white" />
           </Animated.View>
         )}
@@ -133,24 +161,26 @@ const Publication: React.FC<PublicationProps> = ({ id, description, images, stat
     </TouchableWithoutFeedback>
   );
 
-  // Formata o tempo de criação
-  const timeAgo = formatDistanceToNow(parseISO(createdAt), { addSuffix: false, locale: ptBR });
-
   return (
-    <View style={styles.container}>
+    <View style={styles.containerPub}>
       <View>
         <TouchableOpacity
           style={styles.header}
           onPress={() => {
-            router.push({ pathname: '/person', params: { userId } });
+            router.push({ pathname: "/person", params: { userId } });
           }}
         >
           <Image
-            source={{ uri: user.profileImage || 'https://via.placeholder.com/30' }}
+            source={{
+              uri: user?.profilePicture || "https://via.placeholder.com/30",
+            }}
             style={styles.profileImage}
           />
-          <View>
-            <Text style={styles.headTittle}>{user.name}</Text>
+          <View style={styles.headerContainer}>
+            <View>
+              <Text style={styles.headTittle}>{user.name}</Text>
+              <Text style={styles.status}>{status}</Text>
+            </View>
             <Text style={styles.cityText}>{location}</Text>
           </View>
         </TouchableOpacity>
@@ -170,71 +200,116 @@ const Publication: React.FC<PublicationProps> = ({ id, description, images, stat
         <Ionicons name="image" size={20} color="white" />
       </View>
       <View style={styles.actionsContainer}>
-        <TouchableOpacity onPress={handleLike} style={styles.iconButton}>
-          <Ionicons name={liked ? 'heart' : 'heart-outline'} size={30} color={liked ? 'red' : 'black'} />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={handleSave} style={styles.iconButton}>
-          <Ionicons name={saved ? 'bookmark' : 'bookmark-outline'} size={30} color="black" />
-        </TouchableOpacity>
+        <Text style={styles.description}>{description} </Text>
+        <View style={styles.actionButton}>
+          <TouchableOpacity onPress={handleLike} style={styles.iconButton}>
+            <Ionicons
+              name={liked ? "heart" : "heart-outline"}
+              size={24}
+              color={liked ? "red" : "black"}
+            />
+            <Text
+              style={{
+                fontWeight: "bold",
+                color: "#3D3D3D",
+                fontFamily: "SanFransciscoSemibold",
+              }}
+            >
+              {likeCount} curtidas
+            </Text>
+          </TouchableOpacity>
+          <Text style={styles.hours}>{timeAgo} </Text>
+        </View>
       </View>
-      <Text style={styles.title}>{likeCount} curtidas</Text>
-      <Text style={styles.title}>{status}</Text>
-      <Text style={styles.text}>{description}</Text>
-      <Text style={styles.hours}>{timeAgo} atrás</Text>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    marginBottom: 20,
+  containerPub: {
+    backgroundColor: "white",
+    marginHorizontal: 15,
+    marginVertical: 10,
+    borderWidth: 1,
+    borderRadius: 15,
+    borderColor: "#f0f0f0",
   },
   headTittle: {
-    fontWeight: 'bold',
+    fontFamily: "SanFransciscoBold",
+    color: "#3D3D3D",
   },
-  title: {
-    fontWeight: 'bold',
-    paddingHorizontal: 15,
+  status: { fontFamily: "SanFransciscoMedium", color: "#3D3D3D" },
+  actionButton: {
+    width: "100%",
+    flexDirection: "row",
+    paddingBottom: 5,
+    paddingHorizontal: 10,
+    justifyContent: "space-between",
   },
   imageContainer: {
-    position: 'relative',
+    position: "relative",
   },
   image: {
-    width: width,
-    height: 320,
+    width: width - 60,
+    height: 360,
+  },
+  description: {
+    width: "100%",
+    margin: 5,
+    paddingHorizontal: 15,
+    paddingTop: 5,
+    borderRadius: 10,
+    fontWeight: "600",
+    color: "#3D3D3D",
+    fontFamily: "SanFransciscoMedium",
   },
   heartContainer: {
-    position: 'absolute',
-    top: '30%',
-    left: '40%',
-    alignItems: 'center',
-    justifyContent: 'center',
+    position: "absolute",
+    top: "30%",
+    left: "45%",
+    alignItems: "center",
+    justifyContent: "center",
     zIndex: 1,
   },
   actionsContainer: {
-    flexDirection: 'row',
-    marginVertical: 5,
+    position: "absolute",
+    top: "82%",
+    width: "95%",
+    marginHorizontal: 9,
+    alignItems: "center",
+    borderRadius: 10,
+    backgroundColor: "rgba(255, 255, 255, 0.6)",
   },
   iconButton: {
-    paddingVertical: 5,
-    marginHorizontal: 10,
+    borderRadius: 10,
+    flexDirection: "row",
+    gap: 5,
+    padding: 1,
+    alignItems: "center",
   },
   hours: {
-    color: '#696969',
-    paddingHorizontal: 15,
+    color: "#3D3D3D",
+    paddingHorizontal: 7,
+    paddingVertical: 5,
+    fontWeight: "600",
+    fontFamily: "SanFransciscoMedium",
+    borderRadius: 10,
   },
   images: {
-    borderTopColor: '#F3F3F3',
+    borderTopColor: "#F3F3F3",
     borderTopWidth: 1,
-    borderBottomColor: '#F3F3F3',
+    borderBottomColor: "#F3F3F3",
     borderBottomWidth: 1,
+    width: "100%",
+    borderBottomEndRadius: 20,
+    borderBottomStartRadius: 20,
   },
   text: {
     paddingHorizontal: 15,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 10,
   },
   profileImage: {
@@ -244,24 +319,31 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   imageCountContainer: {
-    position: 'absolute',
+    position: "absolute",
     top: 60,
     right: 10,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
     borderRadius: 15,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   imageCountText: {
-    color: '#fff',
-    fontWeight: 'bold',
+    color: "#fff",
+    fontWeight: "bold",
     marginRight: 5,
   },
   cityText: {
-    color: "#696969"
-  }
+    marginTop: 5,
+    color: "#696969",
+    fontFamily: "SanFransciscoMedium",
+  },
+  headerContainer: {
+    width: "85%",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
 });
 
 export default Publication;

@@ -41,7 +41,7 @@ export const fetchPublications = async (controller: AbortController) => {
 
 export const searchPublications = async (query: string): Promise<[]> => {
   const response = await axios.get(
-    `http://localhost:3000/publications/search?q=${query}`
+    `$hj{API_URL}/publications/search?q=${query}`
   );
   return response.data;
 };
@@ -55,17 +55,16 @@ export const pickImages = async (existingImages: string[]) => {
   const permissionResult =
     await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!permissionResult.granted) {
-    alert(
-      "Permissão negada!"
-    );
+    alert("Permissão negada!");
     return null;
   }
 
   const result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    mediaTypes: ["images"],
     allowsMultipleSelection: true,
     selectionLimit: 4 - existingImages.length,
     quality: 1,
+    aspect: [4, 3],
   });
 
   if (!result.canceled && result.assets) {
@@ -80,21 +79,45 @@ export const pickImages = async (existingImages: string[]) => {
 
 export const createPost = async (newPost: NewPost, user: string) => {
   const formData = new FormData();
+
   formData.append("description", newPost.details);
   formData.append("info", newPost.info);
   formData.append("userId", user);
   formData.append("status", newPost.status);
   formData.append("location", newPost.location || "Marilia");
 
-  for (const [index, imageUri] of newPost.images.entries()) {
-    const response = await fetch(imageUri);
-    const blob = await response.blob();
-    const fileName = imageUri.split("/").pop() || `image_${index}.jpg`;
-    formData.append("images[]", blob, fileName);
-  }
+  try {
+    if (newPost.images && newPost.images.length > 0) {
+      const imagesToSend = newPost.images.slice(0, 4);
 
-  return await fetch(`${process.env.EXPO_PUBLIC_API_URL}/publications`, {
-    method: "POST",
-    body: formData,
-  });
+      for (let i = 0; i < imagesToSend.length; i++) {
+        const imageUri = imagesToSend[i];
+        const file = {
+          uri: imageUri,
+          type: "image/jpeg",
+          name: `image${i + 1}.jpg`,
+        };
+        formData.append("images", file);
+      }
+    } else {
+      console.error("Nenhuma imagem fornecida.");
+      return;
+    }
+
+    const response = await fetch(
+      `${process.env.EXPO_PUBLIC_API_URL}/publications`,
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
+    if (response.status === 201) {
+      const data = await response.json();
+      return { data, status: response.status };
+    } else {
+      console.error("Erro ao criar publicação:", response.statusText);
+    }
+  } catch (error) {
+    console.error("Erro ao enviar a publicação:", error);
+  }
 };

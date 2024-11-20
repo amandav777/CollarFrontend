@@ -6,16 +6,32 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  Image,
 } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
-import { register } from "@/services/authService"; // Importando o serviço de registro
+import { register } from "@/services/authService";
 
 const RegisterScreen: React.FC = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const router = useRouter();
+
+  const handleImagePick = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      setProfilePicture(result.assets[0].uri);
+    }
+  };
 
   const handleRegister = async () => {
     if (!name || !email || !password || !confirmPassword) {
@@ -29,10 +45,25 @@ const RegisterScreen: React.FC = () => {
     }
 
     try {
-      await register({ name, email, password }); // Chamando o serviço de registro
+      const formData = new FormData();
+
+      formData.append("name", name);
+      formData.append("email", email);
+      formData.append("password", password);
+
+      if (profilePicture) {
+        const fileName = profilePicture.split("/").pop() || "profile.jpg";
+        formData.append("profilePicture", {
+          uri: profilePicture,
+          name: fileName,
+          type: "image/jpeg",
+        } as any); // Para corrigir tipos
+      }
+
+      await register(formData);
       Alert.alert("Success", "Registration successful. Please log in.");
       router.push("/login");
-    } catch (error:any) {
+    } catch (error: any) {
       Alert.alert("Registration failed", error.message);
     }
   };
@@ -40,6 +71,13 @@ const RegisterScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Register</Text>
+      <TouchableOpacity onPress={handleImagePick} style={styles.imagePicker}>
+        {profilePicture ? (
+          <Image source={{ uri: profilePicture }} style={styles.profileImage} />
+        ) : (
+          <Text style={styles.imagePickerText}>Pick Profile Picture</Text>
+        )}
+      </TouchableOpacity>
       <TextInput
         style={styles.input}
         placeholder="Name"
@@ -117,6 +155,25 @@ const styles = StyleSheet.create({
     marginTop: 16,
     textAlign: "center",
     color: "#007BFF",
+  },
+  imagePicker: {
+    height: 100,
+    width: 100,
+    borderRadius: 50,
+    backgroundColor: "#ddd",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+    alignSelf: "center",
+  },
+  imagePickerText: {
+    color: "#888",
+    textAlign: "center",
+  },
+  profileImage: {
+    height: 100,
+    width: 100,
+    borderRadius: 50,
   },
 });
 

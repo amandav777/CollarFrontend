@@ -1,7 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, FlatList, Text, Image, ActivityIndicator } from 'react-native';
-import SearchBar from '@/components/SearchBar'; 
-import { fetchPublications, searchPublications, PublicationData } from '@/services/publicationService';
+import React, { useState, useEffect } from "react";
+import {
+  StyleSheet,
+  View,
+  FlatList,
+  Text,
+  Image,
+  ActivityIndicator,
+} from "react-native";
+import SearchBar from "@/components/SearchBar";
+import {
+  fetchPublications,
+  searchPublications,
+  PublicationData,
+} from "@/services/publicationService";
 
 export default function ExploreScreen() {
   const [posts, setPosts] = useState<PublicationData[]>([]);
@@ -17,7 +28,7 @@ export default function ExploreScreen() {
       setPosts(data);
       setFilteredPosts(data);
     } catch (error) {
-      console.error('Erro ao buscar publicações:', error);
+      console.error("Erro ao buscar publicações:", error);
     } finally {
       setLoading(false);
     }
@@ -28,7 +39,7 @@ export default function ExploreScreen() {
   }, []);
 
   const handleSearch = async (query: string) => {
-    if (query === '') {
+    if (query === "") {
       setFilteredPosts(posts);
     } else {
       setLoading(true);
@@ -36,7 +47,7 @@ export default function ExploreScreen() {
         const data = await searchPublications(query);
         setFilteredPosts(data);
       } catch (error) {
-        console.error('Erro na busca:', error);
+        console.error("Erro na busca:", error);
       } finally {
         setLoading(false);
       }
@@ -48,7 +59,7 @@ export default function ExploreScreen() {
       <Image source={{ uri: item.images[0] }} style={styles.postImage} />
       <View style={styles.postDetails}>
         <Text style={styles.postTitle}>{item.description}</Text>
-        <Text style={styles.postUser}>{item.user.name}</Text> {/* Corrigido para user.name */}
+        <Text style={styles.postUser}>{item.user.name}</Text>
         <Text style={styles.postLikeCount}>{item.likeCount} curtidas</Text>
       </View>
     </View>
@@ -74,15 +85,15 @@ export default function ExploreScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   list: {
     padding: 10,
   },
   postContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: 20,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: "#f9f9f9",
     borderRadius: 8,
     padding: 10,
   },
@@ -93,18 +104,18 @@ const styles = StyleSheet.create({
   },
   postDetails: {
     marginLeft: 10,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   postTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   postUser: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
   },
   postLikeCount: {
     fontSize: 12,
-    color: '#999',
+    color: "#999",
   },
 });
