@@ -6,6 +6,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
+  Dimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AntDesign from "@expo/vector-icons/AntDesign";
@@ -58,7 +59,10 @@ const ProfileScreen: React.FC = () => {
           setUserData(data);
 
           // Armazene os dados no cache (AsyncStorage)
-          await AsyncStorage.setItem(`userData_${userId}`, JSON.stringify(data));
+          await AsyncStorage.setItem(
+            `userData_${userId}`,
+            JSON.stringify(data)
+          );
           setIsLoading(false);
         }
       } catch (error) {
@@ -89,11 +93,11 @@ const ProfileScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity style={styles.backButton} onPress={backRoute}>
+        <AntDesign name="arrowleft" size={24} color="black" />
+        <Text style={styles.perfil}>Perfil</Text>
+      </TouchableOpacity>
       <SafeAreaView>
-        <TouchableOpacity style={styles.backButton} onPress={backRoute}>
-          <AntDesign name="arrowleft" size={24} color="black" />
-          <Text style={styles.perfil}>Perfil</Text>
-        </TouchableOpacity>
         <View style={styles.header}>
           <Image
             source={{
@@ -107,7 +111,11 @@ const ProfileScreen: React.FC = () => {
 
         <View style={styles.buttonsContainer}>
           <TouchableOpacity style={styles.button} onPress={handleSettings}>
-            <Ionicons name="settings-outline" size={20} color="#fff" />
+            <Ionicons name="heart" size={20} color="red" />
+            <Text style={styles.buttonTextHeart}>Publicações curtidas</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={handleSettings}>
+            <Ionicons name="settings-outline" size={20} color="gray" />
             <Text style={styles.buttonText}>Configurações</Text>
           </TouchableOpacity>
           <LogoutButton />
@@ -116,12 +124,20 @@ const ProfileScreen: React.FC = () => {
     </View>
   );
 };
+const screenHeight = Dimensions.get("window").height;
 
 const styles = StyleSheet.create({
   perfil: { fontFamily: "SanFransciscoBold", fontSize: 24 },
-  backButton: { flexDirection: "row", alignItems: "center", gap: 10, top: "-5%" },
+  backButton: {
+    position: "absolute",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    top: "5%",
+    left: "5%",
+  },
   container: {
-    height: "100%",
+    height: screenHeight,
     justifyContent: "center",
     backgroundColor: "white",
     paddingHorizontal: 20,
@@ -132,7 +148,6 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
   },
   profileImage: {
-    marginTop: 50,
     width: 100,
     height: 100,
     borderRadius: 50,
@@ -151,23 +166,27 @@ const styles = StyleSheet.create({
     color: "#696969",
   },
   buttonsContainer: {
-    marginTop: 100,
+    marginTop: 50,
     width: "100%",
   },
   button: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#007BFF",
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 15,
+    padding: 5,
+    
+    marginBottom: 20,
   },
   buttonText: {
-    color: "#fff",
+    color: "gray",
     fontFamily: "SanFransciscoSemibold",
-    fontSize: 16,
-    fontWeight: "bold",
+    fontSize: 18,
+    marginLeft: 10,
+  },
+  buttonTextHeart: {
+    color: "gray",
+    fontFamily: "SanFransciscoSemibold",
+    fontSize: 18,
     marginLeft: 10,
   },
   logoutButton: {
