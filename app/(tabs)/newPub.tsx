@@ -72,6 +72,7 @@ export default function CreatePostScreen() {
           images: [],
           location: "",
         });
+        setCurrentStep(1)
         router.push("/");
       } else {
         Alert.alert("Erro", "Ocorreu um erro ao criar a publicação.");

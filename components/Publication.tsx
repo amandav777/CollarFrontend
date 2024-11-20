@@ -178,7 +178,13 @@ const Publication: React.FC<PublicationProps> = ({
           />
           <View style={styles.headerContainer}>
             <View>
-              <Text style={styles.headTittle}>{user.name}</Text>
+              <Text
+                style={styles.headTittle}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {user.name}
+              </Text>
               <Text style={styles.status}>{status}</Text>
             </View>
             <Text style={styles.cityText}>{location}</Text>
@@ -200,7 +206,9 @@ const Publication: React.FC<PublicationProps> = ({
         <Ionicons name="image" size={20} color="white" />
       </View>
       <View style={styles.actionsContainer}>
-        <Text style={styles.description}>{description} </Text>
+        <Text style={styles.description} numberOfLines={1} ellipsizeMode="tail">
+          {description}{" "}
+        </Text>
         <View style={styles.actionButton}>
           <TouchableOpacity onPress={handleLike} style={styles.iconButton}>
             <Ionicons
@@ -235,6 +243,7 @@ const styles = StyleSheet.create({
     borderColor: "#f0f0f0",
   },
   headTittle: {
+    maxWidth: 150,
     fontFamily: "SanFransciscoBold",
     color: "#3D3D3D",
   },
