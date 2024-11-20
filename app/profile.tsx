@@ -25,6 +25,7 @@ type UserProps = {
 const ProfileScreen: React.FC = () => {
   const [userData, setUserData] = useState<UserProps | null>(null);
   const [userId, setUserId] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const fetchUserId = async () => {
@@ -39,12 +40,30 @@ const ProfileScreen: React.FC = () => {
     };
 
     const fetchData = async () => {
-      if (userId === null) return;
+      if (userId === null) {
+        setIsLoading(false);
+        return;
+      }
+
+      // Verifique se os dados já estão no cache (AsyncStorage)
       try {
-        const data: UserProps = await fetchUserData(userId);
-        setUserData(data);
+        const cachedData = await AsyncStorage.getItem(`userData_${userId}`);
+        if (cachedData) {
+          // Se os dados estiverem no cache, use-os
+          setUserData(JSON.parse(cachedData));
+          setIsLoading(false);
+        } else {
+          // Caso contrário, faça a requisição
+          const data: UserProps = await fetchUserData(userId);
+          setUserData(data);
+
+          // Armazene os dados no cache (AsyncStorage)
+          await AsyncStorage.setItem(`userData_${userId}`, JSON.stringify(data));
+          setIsLoading(false);
+        }
       } catch (error) {
         console.error("Error fetching user data:", error);
+        setIsLoading(false);
       }
     };
 
@@ -60,6 +79,14 @@ const ProfileScreen: React.FC = () => {
     router.back();
   };
 
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <Text>Carregando...</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <SafeAreaView>
@@ -69,7 +96,9 @@ const ProfileScreen: React.FC = () => {
         </TouchableOpacity>
         <View style={styles.header}>
           <Image
-            source={{ uri: userData?.profilePicture }}
+            source={{
+              uri: userData?.profilePicture || "https://via.placeholder.com/30",
+            }}
             style={styles.profileImage}
           />
           <Text style={styles.name}>{userData?.name}</Text>
@@ -90,11 +119,9 @@ const ProfileScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   perfil: { fontFamily: "SanFransciscoBold", fontSize: 24 },
-  backButton: { flexDirection: "row", alignItems: "center", gap: 10,top:"-5%" },
+  backButton: { flexDirection: "row", alignItems: "center", gap: 10, top: "-5%" },
   container: {
-    // alignItems: "center",
-    height:"100%",
-    // marginTop: 20,
+    height: "100%",
     justifyContent: "center",
     backgroundColor: "white",
     paddingHorizontal: 20,
@@ -102,10 +129,10 @@ const styles = StyleSheet.create({
   header: {
     alignItems: "center",
     marginBottom: 40,
-    backgroundColor:"white"
+    backgroundColor: "white",
   },
   profileImage: {
-    marginTop:50,
+    marginTop: 50,
     width: 100,
     height: 100,
     borderRadius: 50,
@@ -115,18 +142,13 @@ const styles = StyleSheet.create({
     fontFamily: "SanFransciscoSemibold",
     fontSize: 24,
     fontWeight: "bold",
-    textAlign:"center",
-    width:"70%",
+    textAlign: "center",
+    width: "70%",
   },
   email: {
-    marginTop:10,
+    marginTop: 10,
     fontSize: 16,
     color: "#696969",
-  },
-  phone: {
-    fontSize: 16,
-    color: "#696969",
-    marginTop: 5,
   },
   buttonsContainer: {
     marginTop: 100,
@@ -144,7 +166,6 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "#fff",
     fontFamily: "SanFransciscoSemibold",
-
     fontSize: 16,
     fontWeight: "bold",
     marginLeft: 10,
