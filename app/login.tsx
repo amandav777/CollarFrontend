@@ -25,7 +25,7 @@ const LoginScreen: React.FC = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      router.push("/");
+      router.push("/feed");
     }
   }, [isAuthenticated, router]);
 
@@ -39,7 +39,7 @@ const LoginScreen: React.FC = () => {
 
     try {
       await login(email, password);
-      router.push("/");
+      router.push("/feed");
     } catch (error: any) {
       Alert.alert(
         "Login failed",

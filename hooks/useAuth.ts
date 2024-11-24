@@ -16,6 +16,7 @@ export function useAuth() {
           setIsAuthenticated(false);
         }
       } catch (error) {
+        console.error("Erro ao verificar autenticação:", error);
         setIsAuthenticated(false);
       } finally {
         setLoading(false);

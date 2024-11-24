@@ -2,20 +2,24 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   StyleSheet,
   FlatList,
-  ActivityIndicator,
   RefreshControl,
   View,
   Text,
+  ScrollView,
+  TouchableOpacity,
 } from "react-native";
 import Header from "@/components/Header";
 import Publication from "@/components/Publication";
+import PublicationSkeleton from "@/components/skeletons/PublicationSkeleton"; // Corrigido para o nome do SkeletonLoader
 import {
   fetchPublications,
   PublicationData,
 } from "@/services/publicationService";
+import { router } from "expo-router";
 
 const HomeScreen = () => {
   const [publications, setPublications] = useState<PublicationData[]>([]);
+  console.log(publications);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [sortOrder] = useState<"asc" | "desc">("desc");
@@ -30,6 +34,7 @@ const HomeScreen = () => {
       console.log(error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -44,33 +49,55 @@ const HomeScreen = () => {
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     loadPublications();
-    setRefreshing(false);
   }, []);
 
   useEffect(() => {
     loadPublications();
   }, [sortOrder]);
 
-  const renderPublication = ({ item }: { item: PublicationData }) => (
+  const renderPublication = ({ item }: { item: any }) => (
+    // <TouchableOpacity
+    //   onPress={() =>
+    //     router.push({
+    //       pathname: "/postDetails",
+    //       params: item,
+    //     })
+    //   }
+    //   children={
     <Publication
       id={item.id}
       description={item.description}
       images={item.images}
+      contactInfos={item.contactInfos}
       status={item.status}
       user={item.user}
       createdAt={item.createdAt}
       location={item.location}
       likes={item.likeCount}
     />
+    //   }
+    // ></TouchableOpacity>
   );
 
   return (
     <View style={styles.container}>
-      <Header></Header>
+      <Header />
       {loading ? (
-        <ActivityIndicator size="large" color="#0000ff" />
+        // Exibindo o SkeletonLoader enquanto as publicações estão carregando
+        <PublicationSkeleton />
       ) : publications.length === 0 ? (
-        <Text style={styles.emptyMessage}>Nenhuma publicação disponível.</Text>
+        <ScrollView
+          contentContainerStyle={styles.emptyState}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <Text style={styles.emptyMessage}>
+            Nenhuma publicação disponível.
+          </Text>
+          <Text style={styles.refreshText}>Puxe para atualizar.</Text>
+        </ScrollView>
       ) : (
         <FlatList
           data={publications}
@@ -79,7 +106,6 @@ const HomeScreen = () => {
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
-          
         />
       )}
     </View>
@@ -91,11 +117,20 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f8f8f8",
   },
+  emptyState: {
+    flex: 1,
+    alignItems: "center",
+    // justifyContent: 'center',
+  },
   emptyMessage: {
-    textAlign: "center",
-    marginTop: 50,
+    marginTop: 15,
     fontSize: 16,
     color: "#888",
+  },
+  refreshText: {
+    fontSize: 14,
+    color: "#888",
+    marginTop: 10,
   },
 });
 

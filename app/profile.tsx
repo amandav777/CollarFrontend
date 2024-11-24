@@ -1,20 +1,21 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
   Image,
   StyleSheet,
   TouchableOpacity,
-  Alert,
+  ActivityIndicator,
   Dimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AntDesign from "@expo/vector-icons/AntDesign";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { fetchUserData } from "@/services/userService";
 import LogoutButton from "@/components/LogoutButton";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native"; // Hook para detectar foco na tela
+import ProfileSkeleton from "@/components/skeletons/ProfileSkeleton";
 
 type UserProps = {
   id: number;
@@ -25,58 +26,50 @@ type UserProps = {
 
 const ProfileScreen: React.FC = () => {
   const [userData, setUserData] = useState<UserProps | null>(null);
-  const [userId, setUserId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  useEffect(() => {
-    const fetchUserId = async () => {
-      try {
-        const storedUserId = await AsyncStorage.getItem("userId");
-        if (storedUserId) {
-          setUserId(parseInt(storedUserId, 10));
-        }
-      } catch (error) {
-        console.error("Error getting userId from AsyncStorage:", error);
-      }
-    };
+  const fetchData = async () => {
+    try {
+      setIsLoading(true);
+      const userId = 1; // Substitua com lógica para buscar o ID do usuário autenticado
+      const data: UserProps = await fetchUserData(userId);
+      setUserData(data);
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    const fetchData = async () => {
-      if (userId === null) {
-        setIsLoading(false);
-        return;
-      }
-
-      // Verifique se os dados já estão no cache (AsyncStorage)
-      try {
-        const cachedData = await AsyncStorage.getItem(`userData_${userId}`);
-        if (cachedData) {
-          // Se os dados estiverem no cache, use-os
-          setUserData(JSON.parse(cachedData));
-          setIsLoading(false);
-        } else {
-          // Caso contrário, faça a requisição
-          const data: UserProps = await fetchUserData(userId);
-          setUserData(data);
-
-          // Armazene os dados no cache (AsyncStorage)
-          await AsyncStorage.setItem(
-            `userData_${userId}`,
-            JSON.stringify(data)
-          );
-          setIsLoading(false);
-        }
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-        setIsLoading(false);
-      }
-    };
-
-    fetchUserId();
-    fetchData();
-  }, [userId]);
+  // Atualiza os dados sempre que a tela ganhar o foco
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [])
+  );
 
   const handleSettings = () => {
-    Alert.alert("Configurações", "Tela de configurações.");
+    if (userData) {
+      router.push({
+        pathname: "/settings",
+        params: {
+          name: userData.name,
+          email: userData.email,
+          profilePicture: userData.profilePicture,
+        },
+      });
+    }
+  };
+
+  const likedPosts = () => {
+    if (userData) {
+      router.push({
+        pathname: "/likedPublications",
+        params: {
+          userId: userData.id
+        },
+      });
+    }
   };
 
   const backRoute = () => {
@@ -86,7 +79,7 @@ const ProfileScreen: React.FC = () => {
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <Text>Carregando...</Text>
+        <ProfileSkeleton />
       </View>
     );
   }
@@ -99,24 +92,28 @@ const ProfileScreen: React.FC = () => {
       </TouchableOpacity>
       <SafeAreaView>
         <View style={styles.header}>
-          <Image
-            source={{
-              uri: userData?.profilePicture || "https://via.placeholder.com/30",
-            }}
-            style={styles.profileImage}
-          />
+          {userData?.profilePicture ? (
+            <Image
+              source={{
+                uri: userData.profilePicture || "https://via.placeholder.com/100",
+              }}
+              style={styles.profileImage}
+            />
+          ) : (
+            <ActivityIndicator />
+          )}
           <Text style={styles.name}>{userData?.name}</Text>
           <Text style={styles.email}>{userData?.email}</Text>
         </View>
 
         <View style={styles.buttonsContainer}>
-          <TouchableOpacity style={styles.button} onPress={handleSettings}>
+          <TouchableOpacity style={styles.button} onPress={likedPosts}>
             <Ionicons name="heart" size={20} color="red" />
             <Text style={styles.buttonTextHeart}>Publicações curtidas</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.button} onPress={handleSettings}>
-            <Ionicons name="settings-outline" size={20} color="gray" />
-            <Text style={styles.buttonText}>Configurações</Text>
+            <Ionicons name="pencil-outline" size={20} color="gray" />
+            <Text style={styles.buttonText}>Editar Perfil</Text>
           </TouchableOpacity>
           <LogoutButton />
         </View>
@@ -124,6 +121,7 @@ const ProfileScreen: React.FC = () => {
     </View>
   );
 };
+
 const screenHeight = Dimensions.get("window").height;
 
 const styles = StyleSheet.create({
@@ -148,6 +146,8 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
   },
   profileImage: {
+    borderWidth:1,
+    borderColor: "gray",
     width: 100,
     height: 100,
     borderRadius: 50,
@@ -174,7 +174,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: 5,
-    
     marginBottom: 20,
   },
   buttonText: {

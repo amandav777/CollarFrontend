@@ -25,7 +25,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 
 export default function CreatePostScreen() {
-  const [currentStep, setCurrentStep] = useState(1); // Estado para controlar o passo
+  const [currentStep, setCurrentStep] = useState(1); 
   const [newPost, setNewPost] = useState({
     info: "",
     user: "",
@@ -72,8 +72,8 @@ export default function CreatePostScreen() {
           images: [],
           location: "",
         });
-        setCurrentStep(1)
-        router.push("/");
+        setCurrentStep(1);
+        router.push("/feed");
       } else {
         Alert.alert("Erro", "Ocorreu um erro ao criar a publicação.");
       }
@@ -140,7 +140,13 @@ export default function CreatePostScreen() {
                 ) : (
                   <View style={styles.placeholderContainer}>
                     <Ionicons name="image-outline" size={50} color="gray" />
-                    <Text style={{ color: "#696969",marginTop:10,fontFamily:"SanFransciscoSemibold" }}>
+                    <Text
+                      style={{
+                        color: "#696969",
+                        marginTop: 10,
+                        fontFamily: "SanFransciscoSemibold",
+                      }}
+                    >
                       Nenhuma imagem selecionada
                     </Text>
                   </View>

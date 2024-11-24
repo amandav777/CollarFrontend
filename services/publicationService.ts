@@ -12,7 +12,7 @@ export type PublicationData = {
   user: {
     id: number;
     name: string;
-    profileImage: any;
+    profilePicture: any;
   };
   location: string;
   likeCount: number;
@@ -41,7 +41,7 @@ export const fetchPublications = async (controller: AbortController) => {
 
 export const searchPublications = async (query: string): Promise<[]> => {
   const response = await axios.get(
-    `$hj{API_URL}/publications/search?q=${query}`
+    `${API_URL}/publications/search?q=${query}`
   );
   return response.data;
 };
@@ -81,7 +81,7 @@ export const createPost = async (newPost: NewPost, user: string) => {
   const formData = new FormData();
 
   formData.append("description", newPost.details);
-  formData.append("info", newPost.info);
+  formData.append("contactInfos", newPost.info);
   formData.append("userId", user);
   formData.append("status", newPost.status);
   formData.append("location", newPost.location || "Marilia");
@@ -119,5 +119,15 @@ export const createPost = async (newPost: NewPost, user: string) => {
     }
   } catch (error) {
     console.error("Erro ao enviar a publicação:", error);
+  }
+};
+
+export const getAllLikedPublications = async (userId: number) => {
+  try {
+    const response = await axios.get(`${API_URL}/like/user/${userId}/publications`);
+    return response.data; 
+  } catch (error) {
+    console.error("Erro ao buscar publicações curtidas:", error);
+    throw error;
   }
 };

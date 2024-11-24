@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -25,10 +25,10 @@ type PublicationProps = {
   status: string;
   user: {
     name: string;
-    profileImage: any;
     id: number;
     profilePicture: string;
   };
+  contactInfos: any,
   likes: any;
   location: string;
   createdAt: string;
@@ -42,6 +42,7 @@ const Publication: React.FC<PublicationProps> = ({
   images,
   status,
   user,
+  contactInfos,
   createdAt,
   location,
   likes,
@@ -49,8 +50,11 @@ const Publication: React.FC<PublicationProps> = ({
   const [liked, setLiked] = useState(false);
   const [showHeart, setShowHeart] = useState(false);
   const [likeCount, setLikeCount] = useState<number>(likes || 0);
-  const [lastPress, setLastPress] = useState<number | null>(null);
+  const [lastPress, setLastPress] = useState<number | null | NodeJS.Timeout>(
+    null
+  );
   const [animation] = useState(new Animated.Value(0));
+  const timeoutRef = useRef<number | NodeJS.Timeout | null>(null);
   const router = useRouter();
   const userId = user.id;
   const timeAgo = formatDistanceToNow(parseISO(createdAt), {
@@ -59,6 +63,9 @@ const Publication: React.FC<PublicationProps> = ({
   });
 
   useEffect(() => {
+    if (lastPress) {
+      clearTimeout(lastPress);
+    }
     const checkLikeStatus = async () => {
       const storedUserId = await AsyncStorage.getItem("userId");
 
@@ -78,7 +85,23 @@ const Publication: React.FC<PublicationProps> = ({
     };
 
     checkLikeStatus();
-  }, [id]);
+  }, [id, lastPress]);
+
+  const handleNavigateToDetails = () => {
+    router.push({
+      pathname: "/postDetails",
+      params: {
+        id: id,
+        description: description,
+        images: images,
+        status: status,
+        contactInfos: contactInfos,
+        createdAt: createdAt,
+        location: location,
+        likes: likeCount,
+      },
+    });
+  };
 
   const handleLike = async () => {
     const storedUserId = await AsyncStorage.getItem("userId");
@@ -123,9 +146,21 @@ const Publication: React.FC<PublicationProps> = ({
 
   const handleDoubleTap = () => {
     const now = Date.now();
-    if (lastPress && now - lastPress < 300) {
-      handleLike();
+
+    if (lastPress) {
+      const lastPressNumber = lastPress as number;
+      if (now - lastPressNumber < 300) {
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+        }
+        handleLike();
+      } else {
+        timeoutRef.current = setTimeout(() => {
+          handleNavigateToDetails();
+        }, 300);
+      }
     }
+
     setLastPress(now);
   };
 

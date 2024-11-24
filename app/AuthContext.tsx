@@ -27,7 +27,7 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
           setUserId(null);
         }
       } catch (error) {
-        console.error("Failed to check authentication", error);
+        console.error("Falha ao verificar autenticação:", error);
       }
     };
     checkAuth();
@@ -47,7 +47,7 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
       await AsyncStorage.removeItem("userId");
       setUserId(null);
     } catch (error) {
-      console.error("Logout failed", error);
+      console.error("Falha no logout:", error);
     }
   };
 
@@ -58,5 +58,5 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   );
 };
 
-export default AuthProvider; // Default export
-export { AuthContext }; // Named export
+export default AuthProvider;
+export { AuthContext };
